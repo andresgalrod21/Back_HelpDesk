@@ -1,4 +1,5 @@
 from typing import Optional, List
+from datetime import datetime
 from pydantic import BaseModel, EmailStr
 
 class UserCreate(BaseModel):
@@ -51,6 +52,7 @@ class MessageOut(BaseModel):
     ticket_id: int
     sender_id: Optional[int]
     body: str
+    created_at: datetime
     class Config:
         from_attributes = True
 
