@@ -3,8 +3,13 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 
-# Usar pbkdf2_sha256 para evitar dependencia externa de bcrypt
-pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+# Aceptar hashes existentes en diferentes esquemas (bcrypt, pbkdf2)
+# Guardar nuevos hashes con pbkdf2_sha256 por defecto
+pwd_context = CryptContext(
+    schemes=["pbkdf2_sha256", "bcrypt"],
+    default="pbkdf2_sha256",
+    deprecated="auto",
+)
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_secret_key_change_me")
 ALGORITHM = "HS256"
