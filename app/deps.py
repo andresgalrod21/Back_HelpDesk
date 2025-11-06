@@ -20,9 +20,19 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
-    # Modo desarrollo: bypass de autenticación
+    # Modo desarrollo: si hay token válido, respetar el usuario del token; si no hay token, usar bypass
     if AUTH_DISABLE:
-        # Intenta usar usuario id=1; garantiza siempre rol admin
+        if token:
+            try:
+                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+                user_id = int(payload.get("sub"))
+                user = db.get(User, user_id)
+                if user:
+                    return user
+            except Exception:
+                # si el token no es válido, caemos al bypass
+                pass
+        # Bypass: usar usuario id=1 y garantizar rol admin
         user = db.get(User, 1)
         if not user:
             user = User(id=1, email="dev@example.com", password_hash="", role="admin")

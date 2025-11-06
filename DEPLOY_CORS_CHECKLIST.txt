@@ -1,0 +1,82 @@
+Checklist de Deploy y CORS en Render (Helpdesk Backend)
+======================================================
+
+Objetivo: dejar el backend saludable en Render y permitir conexión desde el frontend (localhost y dominio publicado), evitando errores CORS y 502.
+
+1) Servicio en Render
+- Tipo: Web Service
+- Root Directory:
+  - Monorepo (este proyecto): backend
+  - Repo solo-backend: vacío
+- Health Check Path: /health
+
+2) Comandos
+- Build Command: pip install -r requirements.txt
+- Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+3) Variables de entorno (Environment)
+- DATABASE_URL: <tu URL de base de datos>
+- SECRET_KEY: cadena larga y aleatoria
+- AUTH_DISABLE: true (solo pruebas); luego false en producción
+- ACCESS_TOKEN_EXPIRE_MINUTES: 60
+- CORS_ORIGINS: http://localhost:5500,http://127.0.0.1:5500
+  - Añade "null" si abres el frontend como archivo local (sin servidor)
+  - Añade el dominio publicado del frontend cuando lo tengas (ej. https://mi-frontend.onrender.com)
+- CORS_ALLOW_CREDENTIALS: false
+  - Cámbialo a true solo si usarás cookies/sesiones; entonces no puede usarse "*" y los orígenes deben ser explícitos
+
+4) Deploy
+- Guarda cambios en Variables y Configuración del servicio
+- Ejecuta Manual Deploy
+- Espera estado Healthy y valida /health
+
+5) Pruebas rápidas (desde terminal)
+- Salud del backend:
+  curl -i https://<tu-servicio>.onrender.com/health
+
+- Preflight CORS (simula navegador desde localhost):
+  curl -i -X OPTIONS https://<tu-servicio>.onrender.com/auth/login \
+    -H "Origin: http://localhost:5500" \
+    -H "Access-Control-Request-Method: POST" \
+    -H "Access-Control-Request-Headers: content-type"
+  Esperado: status 200/204 y cabecera Access-Control-Allow-Origin: http://localhost:5500
+
+- Login directo (descarta CORS):
+  curl -i -X POST https://<tu-servicio>.onrender.com/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"tu@correo","password":"tu_pass"}'
+  Esperado: {"access_token":"...","token_type":"bearer"}
+
+- Documentación:
+  https://<tu-servicio>.onrender.com/docs
+
+6) Frontend (localhost)
+- Abre http://localhost:5500/
+- Configura "API URL" exactamente como: https://<tu-servicio>.onrender.com
+- Prueba login y lectura de /auth/me
+
+7) Depuración de problemas comunes
+- 502 Bad Gateway:
+  - Revisa Logs de Render: errores de arranque, paquetes o DATABASE_URL
+  - Verifica Root Directory correcto y Start Command con uvicorn
+  - Comprueba que /health esté configurado como Health Check Path
+
+- 404 Not Found en rutas (ej. /admin/users):
+  - El servicio no está sirviendo aún o hay ruta equivocada
+  - Valida /docs y /health; si /docs no carga, revisa Start Command/Root Directory
+
+- "Failed to fetch" en el navegador:
+  - CORS bloqueado: revisa que el Origin real (http://localhost:5500 o http://127.0.0.1:5500 o null) esté en CORS_ORIGINS
+  - En DevTools (Network): inspecciona la petición OPTIONS (preflight) y la POST
+  - Si usas cookies/sesiones, CORS_ALLOW_CREDENTIALS debe ser true y los orígenes explícitos
+
+8) Notas sobre contraseñas
+- El backend verifica contraseñas hasheadas con pbkdf2_sha256 y bcrypt
+- Nuevas contraseñas se generan con pbkdf2_sha256 por defecto
+
+9) Buenas prácticas finales
+- Tras validar en pruebas, establece AUTH_DISABLE=false
+- Añade el dominio del frontend publicado a CORS_ORIGINS
+- Mantén SECRET_KEY seguro y diferente entre ambientes
+
+Fin del checklist.
