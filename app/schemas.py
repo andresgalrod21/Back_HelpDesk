@@ -53,6 +53,7 @@ class MessageOut(BaseModel):
     sender_id: Optional[int]
     body: str
     created_at: datetime
+    sender: Optional[UserOut] = None
     class Config:
         from_attributes = True
 
