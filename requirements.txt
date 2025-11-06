@@ -5,5 +5,5 @@ pydantic==2.9.2
 python-dotenv==1.0.1
 passlib[bcrypt]==1.7.4
 PyJWT==2.9.0
-sqlitecloud>=0.5.0
+sqlitecloud==0.0.84
 requests==2.32.3
