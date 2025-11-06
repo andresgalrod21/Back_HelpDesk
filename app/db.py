@@ -1,5 +1,6 @@
 import os
 from sqlalchemy import create_engine, event
+from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 
@@ -49,11 +50,19 @@ if DATABASE_URL.startswith("sqlitecloud://"):
         echo=False,
         future=True,
         creator=lambda: SQLiteCloudCompatConnection(sqlitecloud.connect(DATABASE_URL)),
+        poolclass=NullPool,  # Evitar reutilizar conexiones que el servidor cierre
+        pool_pre_ping=True,  # Verificar conexión antes de usarla
     )
 else:
     if DATABASE_URL.startswith("sqlite"):
         connect_args = {"check_same_thread": False}
-    engine = create_engine(DATABASE_URL, echo=False, future=True, connect_args=connect_args)
+    engine = create_engine(
+        DATABASE_URL,
+        echo=False,
+        future=True,
+        connect_args=connect_args,
+        pool_pre_ping=True,
+    )
 
 # Asegurar FKs en SQLite/SQLiteCloud
 if engine.dialect.name == "sqlite":

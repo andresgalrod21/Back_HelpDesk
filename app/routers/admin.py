@@ -17,15 +17,20 @@ def list_all_tickets(db: Session = Depends(get_db), _: User = Depends(require_ad
 
 @router.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def create_user(payload: AdminUserCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
-    existing = db.query(User).filter(User.email == payload.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email ya registrado")
-    role = payload.role or "user"
-    user = User(email=payload.email, password_hash=hash_password(payload.password), role=role)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    try:
+        existing = db.query(User).filter(User.email == payload.email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email ya registrado")
+        role = payload.role or "user"
+        user = User(email=payload.email, password_hash=hash_password(payload.password), role=role)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+    except Exception as e:
+        db.rollback()
+        # Propagar detalle para diagnóstico (se puede ajustar a logs en producción)
+        raise HTTPException(status_code=500, detail=f"DB error: {e}")
 
 @router.patch("/users/{user_id}", response_model=UserOut)
 def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
