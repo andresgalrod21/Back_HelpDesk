@@ -62,3 +62,4 @@ class MessageUpdate(BaseModel):
 
 class UserUpdate(BaseModel):
     role: Optional[str] = None
+    password: Optional[str] = None

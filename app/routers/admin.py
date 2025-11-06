@@ -39,6 +39,10 @@ def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     if payload.role is not None:
         user.role = payload.role
+    if payload.password is not None:
+        if not payload.password:
+            raise HTTPException(status_code=400, detail="La contraseña no puede estar vacía")
+        user.password_hash = hash_password(payload.password)
     db.add(user)
     db.commit()
     db.refresh(user)
