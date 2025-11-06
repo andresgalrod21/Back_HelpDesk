@@ -8,11 +8,16 @@ from .routers import auth, tickets, admin, chat, messages
 
 app = FastAPI(title="HelpDeskCloud API")
 
-origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",")]
+# CORS: por defecto sin credenciales para permitir "*" en desarrollo.
+# Si necesitas cookies/sesiones, establece CORS_ALLOW_CREDENTIALS=true
+origins_env = os.getenv("CORS_ORIGINS", "*")
+origins = [o.strip() for o in origins_env.split(",")] if origins_env else ["*"]
+CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "false").lower() == "true"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=CORS_ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
